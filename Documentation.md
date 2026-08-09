@@ -106,4 +106,4 @@ npm run build
 
 ## License
 
-Created with Google AI Studio.
+Created with Love by Harsh Mishra
