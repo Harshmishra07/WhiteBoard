@@ -9,8 +9,6 @@ import DrawingCanvas from './components/DrawingCanvas';
 import Toolbar from './components/Toolbar';
 import SlideSelector from './components/SlideSelector';
 
-import { useAutosaveSession } from './hooks/useAutosaveSession';
-
 import {
   Download,
   ZoomIn,
@@ -24,7 +22,6 @@ import {
   X,
   ChevronUp,
   ChevronDown,
-  History,
   Sun,
   Moon,
   Tv,
@@ -93,25 +90,6 @@ export default function App() {
       setShowNotification(null);
     }, 3000);
   }, []);
-
-  const { hasSavedSession, loadSession, clearSession } = useAutosaveSession(
-    slides,
-    activeSlideIndex,
-    pdfPageImages,
-    pdfPageDimensions,
-    triggerToast
-  );
-
-  const handleLoadSession = () => {
-    const session = loadSession();
-    if (session) {
-      setSlides(session.slides);
-      setActiveSlideIndex(session.activeSlideIndex || 0);
-      setPdfPageImages(session.pdfPageImages || {});
-      setPdfPageDimensions(session.pdfPageDimensions || {});
-      triggerToast('Restored previous whiteboard session!');
-    }
-  };
 
   // Helper: Tool selection with specific tool defaults
   const handleSelectTool = useCallback((newTool: Tool) => {
@@ -810,23 +788,6 @@ export default function App() {
               </h1>
             </div>
           </div>
-
-          {/* Load Previous Session Button */}
-          {hasSavedSession && (
-            <button
-              onClick={handleLoadSession}
-              className={`flex items-center gap-1.5 px-3 py-1.5 border text-xs font-bold rounded-xl transition-all active:scale-95 cursor-pointer shadow-xs ${
-                isDarkMode
-                  ? 'bg-amber-950/20 hover:bg-amber-900/30 border-amber-900/50 text-amber-300'
-                  : 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-800'
-              }`}
-              title="Restore your previously autosaved whiteboard session"
-              id="btn-load-session"
-            >
-              <History size={14} className={isDarkMode ? 'text-amber-400' : 'text-amber-600'} />
-              <span>Restore Session</span>
-            </button>
-          )}
 
           {/* Workspace controls & Actions */}
           <div className="flex items-center gap-2.5">
