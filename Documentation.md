@@ -1,8 +1,8 @@
-# Let Study - Interactive Whiteboard & PDF Annotator
+# Let Study - Interactive Whiteboard, PDF & PPT Annotator
 
 ## Overview
 
-**Let Study** is a modern, high-performance web application designed for interactive teaching, presentation, and study sessions. It provides an intuitive canvas for sketching, taking notes, creating vector shapes, and annotating multi-page PDF documents.
+**Let Study** is a modern, high-performance web application designed for interactive teaching, presentation, and study sessions. It provides an intuitive canvas for sketching, taking notes, creating vector shapes, and annotating multi-page PDF documents and PowerPoint (PPT/PPTX) presentations.
 
 ---
 
@@ -33,15 +33,18 @@
   - **White Cursors**: Used on dark boards (Blackboard, Green Chalkboard).
 - **Tool-Specific Indicators**: Custom SVG cursors for Pen, Eraser, Text, Pan (Open/Closed hand), and Precision Crosshairs.
 
-### 4. PDF Annotation & Multi-Slide Management
-- **PDF Upload**: Load multi-page PDF documents and automatically split them into individual annotatable slides.
-- **Slide Navigation**: Rearrange, add, duplicate, or delete slides with a right-hand slide drawer.
-- **Export Capabilities**: Download annotated slides and drawings for sharing and study review.
+### 4. Multi-Document Import (PDF & PowerPoint)
+- **PDF Document Import**: Load multi-page PDF files, which are automatically parsed and rendered page-by-page into full-resolution whiteboard slides.
+- **PowerPoint Presentation Import (PPTX / PPT)**: Client-side extraction of shapes, text frames, theme colors, tables, and media from PPTX presentation archives rendered directly onto high-definition canvas slides.
+- **Slide Interspersing**: Insert blank whiteboards, blackboards, or math grids between imported slides for working out equations or writing side-notes.
+- **Slide Navigation**: Rearrange, add, duplicate, or delete slides with the slide drawer on the right.
+- **Export Capabilities**: Export individual high-resolution PNG images or compile all annotated slides back into a combined multi-page PDF document.
 
 ### 5. UI & Ergonomics
 - **Dark & Light Interface Modes**: Comfortable theme switching for night or daylight environments.
-- **Presentation Mode**: Fullscreen distraction-free view for lectures and live demos.
+- **Header Collapsing**: Maximize active screen real estate for teaching and tablet devices.
 - **Undo / Redo History**: Complete action tracking per slide to allow easy revision.
+- **Local Autosave**: Protects work and drawing timelines against accidental tab closures.
 
 ---
 
@@ -106,4 +109,4 @@ npm run build
 
 ## License
 
-Created with Love by Harsh Mishra
+Created with Google AI Studio.

@@ -56,7 +56,6 @@ export default function DrawingCanvas({
   canvasSize,
 }: DrawingCanvasProps) {
   const bgCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const prevBgCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -86,10 +85,8 @@ export default function DrawingCanvas({
 
   const { width, height } = canvasSize;
 
-  // High-DPI Device Pixel Ratio handling:
-  // Base DPR from window devicePixelRatio, scaled up dynamically when zooming in
-  // so vector drawings are always rendered crisp and high-resolution at any zoom level.
-  const baseDpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
+  // High-DPI Device Pixel Ratio handling (capped at 2 for performance)
+  const dpr = typeof window !== 'undefined' ? Math.min(2, window.devicePixelRatio || 1) : 1;
 
   // Initialize image overlay when pendingImage arrives
   useEffect(() => {
@@ -129,21 +126,16 @@ export default function DrawingCanvas({
     e.preventDefault();
     e.stopPropagation();
 
-    if (!imageOverlay || !containerRef.current) return;
-    const containerRect = containerRef.current.getBoundingClientRect();
-    if (!containerRect.width || !containerRect.height) return;
+    if (!imageOverlay) return;
 
     const startPointerX = e.clientX;
     const startPointerY = e.clientY;
     const startX = imageOverlay.x;
     const startY = imageOverlay.y;
 
-    const scaleX = width / containerRect.width;
-    const scaleY = height / containerRect.height;
-
     const onPointerMove = (moveEv: PointerEvent) => {
-      const dx = ((moveEv.clientX - startPointerX) * scaleX) / scale;
-      const dy = ((moveEv.clientY - startPointerY) * scaleY) / scale;
+      const dx = (moveEv.clientX - startPointerX) / scale;
+      const dy = (moveEv.clientY - startPointerY) / scale;
 
       setImageOverlay((prev) => {
         if (!prev) return null;
@@ -172,9 +164,7 @@ export default function DrawingCanvas({
     e.preventDefault();
     e.stopPropagation();
 
-    if (!imageOverlay || !containerRef.current) return;
-    const containerRect = containerRef.current.getBoundingClientRect();
-    if (!containerRect.width || !containerRect.height) return;
+    if (!imageOverlay) return;
 
     const startPointerX = e.clientX;
     const startPointerY = e.clientY;
@@ -185,12 +175,9 @@ export default function DrawingCanvas({
     const aspect = imageOverlay.naturalWidth / imageOverlay.naturalHeight;
     const keepAspect = imageOverlay.keepAspect;
 
-    const scaleX = width / containerRect.width;
-    const scaleY = height / containerRect.height;
-
     const onPointerMove = (moveEv: PointerEvent) => {
-      const dx = ((moveEv.clientX - startPointerX) * scaleX) / scale;
-      const dy = ((moveEv.clientY - startPointerY) * scaleY) / scale;
+      const dx = (moveEv.clientX - startPointerX) / scale;
+      const dy = (moveEv.clientY - startPointerY) / scale;
 
       let newW = startW;
       let newH = startH;
@@ -335,21 +322,16 @@ export default function DrawingCanvas({
     e.preventDefault();
     e.stopPropagation();
 
-    if (!textInput || !containerRef.current) return;
-    const containerRect = containerRef.current.getBoundingClientRect();
-    if (!containerRect.width || !containerRect.height) return;
+    if (!textInput) return;
 
     const startPointerX = e.clientX;
     const startPointerY = e.clientY;
     const startX = textInput.x;
     const startY = textInput.y;
 
-    const scaleX = width / containerRect.width;
-    const scaleY = height / containerRect.height;
-
     const onPointerMove = (moveEv: PointerEvent) => {
-      const dx = ((moveEv.clientX - startPointerX) * scaleX) / scale;
-      const dy = ((moveEv.clientY - startPointerY) * scaleY) / scale;
+      const dx = (moveEv.clientX - startPointerX) / scale;
+      const dy = (moveEv.clientY - startPointerY) / scale;
 
       setTextInput((prev) => {
         if (!prev) return null;
@@ -370,75 +352,48 @@ export default function DrawingCanvas({
     window.addEventListener('pointerup', onPointerUp);
   };
 
-  // Background transition state
-  const [bgOpacity, setBgOpacity] = useState(1);
-  const [prevBgOpacity, setPrevBgOpacity] = useState(0);
-  const lastBgType = useRef<BackgroundType>(currentSlide.backgroundType);
-  const lastSlideId = useRef<string>(currentSlide.id);
-
-  // 1. Redraw Background Canvas whenever background style or camera scale changes
+  // 1. Redraw Background Canvas whenever slide background style or PDF/PPTX background changes
   useEffect(() => {
     const bgCanvas = bgCanvasRef.current;
     if (!bgCanvas) return;
     const ctx = bgCanvas.getContext('2d');
     if (!ctx) return;
 
-    bgCanvas.width = Math.round(width * scale * baseDpr);
-    bgCanvas.height = Math.round(height * scale * baseDpr);
+    const targetW = Math.round(width * dpr);
+    const targetH = Math.round(height * dpr);
+    if (bgCanvas.width !== targetW || bgCanvas.height !== targetH) {
+      bgCanvas.width = targetW;
+      bgCanvas.height = targetH;
+    }
 
-    const isSameSlide = lastSlideId.current === currentSlide.id;
-    const isBgTypeChanged = lastBgType.current !== currentSlide.backgroundType;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
-    if (isSameSlide && isBgTypeChanged && !pdfPageImage) {
-      const prevBgCanvas = prevBgCanvasRef.current;
-      if (prevBgCanvas) {
-        prevBgCanvas.width = Math.round(width * scale * baseDpr);
-        prevBgCanvas.height = Math.round(height * scale * baseDpr);
-        const prevCtx = prevBgCanvas.getContext('2d');
-        if (prevCtx) {
-          prevCtx.setTransform(scale * baseDpr, 0, 0, scale * baseDpr, 0, 0);
-          prevCtx.imageSmoothingEnabled = true;
-          prevCtx.imageSmoothingQuality = 'high';
-          prevCtx.clearRect(0, 0, width, height);
-          prevCtx.drawImage(bgCanvas, 0, 0, width, height);
-        }
-      }
-
-      renderBlankBackground(ctx, width, height, currentSlide.backgroundType);
-
-      setPrevBgOpacity(1);
-      setBgOpacity(0);
-
-      const timer = setTimeout(() => {
-        setPrevBgOpacity(0);
-        setBgOpacity(1);
-      }, 50);
-
-      lastBgType.current = currentSlide.backgroundType;
-      return () => clearTimeout(timer);
-    } else {
-      if (pdfPageImage) {
+    if (pdfPageImage) {
+      const cached = loadedImagesRef.current[pdfPageImage];
+      if (cached && cached.complete) {
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(cached, 0, 0, width, height);
+      } else {
         const img = new Image();
         img.src = pdfPageImage;
         img.onload = () => {
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-
-          ctx.setTransform(scale * baseDpr, 0, 0, scale * baseDpr, 0, 0);
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, width, height);
+          loadedImagesRef.current[pdfPageImage] = img;
+          if (bgCanvasRef.current) {
+            const currentCtx = bgCanvasRef.current.getContext('2d');
+            if (currentCtx) {
+              currentCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+              currentCtx.clearRect(0, 0, width, height);
+              currentCtx.drawImage(img, 0, 0, width, height);
+            }
+          }
         };
-      } else {
-        renderBlankBackground(ctx, width, height, currentSlide.backgroundType);
       }
-      setBgOpacity(1);
-      setPrevBgOpacity(0);
+    } else {
+      renderBlankBackground(ctx, width, height, currentSlide.backgroundType);
     }
-
-    lastBgType.current = currentSlide.backgroundType;
-    lastSlideId.current = currentSlide.id;
-  }, [currentSlide.backgroundType, currentSlide.id, pdfPageImage, width, height, baseDpr, scale]);
+  }, [currentSlide.id, currentSlide.backgroundType, pdfPageImage, width, height, dpr]);
 
   // 2. Centralized Vector Render function
   const renderVectorCanvas = useCallback(() => {
@@ -447,31 +402,33 @@ export default function DrawingCanvas({
     const ctx = drawingCanvas.getContext('2d');
     if (!ctx) return;
 
-    // Set backing resolution to match device pixel ratio and scale
-    drawingCanvas.width = Math.round(width * scale * baseDpr);
-    drawingCanvas.height = Math.round(height * scale * baseDpr);
+    const targetW = Math.round(width * dpr);
+    const targetH = Math.round(height * dpr);
+    if (drawingCanvas.width !== targetW || drawingCanvas.height !== targetH) {
+      drawingCanvas.width = targetW;
+      drawingCanvas.height = targetH;
+    }
 
     // Clear entire backing canvas
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-
-    // Apply scale transformation directly to 2D Context
-    ctx.setTransform(
-      scale * baseDpr, 0,
-      0, scale * baseDpr,
-      0, 0
-    );
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
     // Legacy data URL fallback if existing from previous session
     if (currentSlide.drawingDataUrl && (!currentSlide.vectorElements || currentSlide.vectorElements.length === 0)) {
-      const img = new Image();
-      img.src = currentSlide.drawingDataUrl;
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0, width, height);
-      };
+      const cached = loadedImagesRef.current[currentSlide.drawingDataUrl];
+      if (cached && cached.complete) {
+        ctx.drawImage(cached, 0, 0, width, height);
+      } else {
+        const img = new Image();
+        img.src = currentSlide.drawingDataUrl;
+        img.onload = () => {
+          loadedImagesRef.current[currentSlide.drawingDataUrl!] = img;
+          renderVectorCanvas();
+        };
+      }
     }
 
     // Render all vector objects natively in World Space
@@ -481,12 +438,12 @@ export default function DrawingCanvas({
     if (activeElementRef.current) {
       renderVectorElement(ctx, activeElementRef.current, loadedImagesRef.current);
     }
-  }, [currentSlide.vectorElements, currentSlide.drawingDataUrl, width, height, baseDpr, scale]);
+  }, [currentSlide.vectorElements, currentSlide.drawingDataUrl, width, height, dpr]);
 
-  // Re-render vector canvas whenever vector objects, active element, slide, zoom scale, or panOffset change
+  // Re-render vector canvas whenever vector objects or active element change
   useEffect(() => {
     renderVectorCanvas();
-  }, [currentSlide.id, currentSlide.vectorElements, activeElement, scale, panOffset, renderVectorCanvas]);
+  }, [currentSlide.id, currentSlide.vectorElements, activeElement, renderVectorCanvas]);
 
   // Auto-focusing on text input when opened
   useEffect(() => {
@@ -499,49 +456,34 @@ export default function DrawingCanvas({
   }, [textInput?.x, textInput?.y]);
 
   const renderBlankBackground = (ctx: CanvasRenderingContext2D, w: number, h: number, type: BackgroundType) => {
-    const bw = Math.round(w * scale * baseDpr);
-    const bh = Math.round(h * scale * baseDpr);
-
-    // Clear backing canvas
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, bw, bh);
+    ctx.clearRect(0, 0, w, h);
 
     // Fill background color across backing buffer
     if (type === 'chalkboard') {
       ctx.fillStyle = '#143d28';
-      ctx.fillRect(0, 0, bw, bh);
+      ctx.fillRect(0, 0, w, h);
     } else if (type === 'blackboard') {
       ctx.fillStyle = '#000000';
-      ctx.fillRect(0, 0, bw, bh);
+      ctx.fillRect(0, 0, w, h);
     } else if (type === 'cream') {
       ctx.fillStyle = '#fdfbf7';
-      ctx.fillRect(0, 0, bw, bh);
+      ctx.fillRect(0, 0, w, h);
     } else {
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, bw, bh);
+      ctx.fillRect(0, 0, w, h);
     }
-
-    // Apply scale transformation for grid/pattern rendering in world space (0..w, 0..h)
-    ctx.setTransform(
-      scale * baseDpr, 0,
-      0, scale * baseDpr,
-      0, 0
-    );
-
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
 
     switch (type) {
       case 'chalkboard':
         ctx.fillStyle = 'rgba(255, 255, 255, 0.025)';
         for (let i = 0; i < 24; i++) {
           ctx.beginPath();
-          ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 120 + 30, 0, Math.PI * 2);
+          ctx.arc((i * 137.5) % w, (i * 219.3) % h, ((i * 37) % 120) + 30, 0, Math.PI * 2);
           ctx.fill();
         }
         break;
       case 'blackboard':
-        // Pure solid black background, no extra decorative shapes/designs
+        // Pure solid black background
         break;
       case 'grid':
         ctx.strokeStyle = 'rgba(14, 165, 233, 0.15)';
@@ -596,7 +538,7 @@ export default function DrawingCanvas({
   }
   const pinchStartRef = useRef<PinchState | null>(null);
 
-  // Mouse wheel scroll zoom listener (zooms centered around mouse cursor position)
+  // Mouse wheel and touchpad gesture zoom & pan listener
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -608,24 +550,41 @@ export default function DrawingCanvas({
       const focalX = e.clientX - rect.left;
       const focalY = e.clientY - rect.top;
 
-      // Exponential zoom factor
-      const zoomFactor = Math.exp(-e.deltaY * 0.002);
-
       const currentScale = scaleRef.current;
       const currentPan = panOffsetRef.current;
 
-      // Calculate world coordinates under cursor before zoom
-      const worldX = (focalX - currentPan.x) / currentScale;
-      const worldY = (focalY - currentPan.y) / currentScale;
+      // Trackpad pinch-to-zoom (emits ctrlKey=true on Mac/Windows trackpads)
+      if (e.ctrlKey) {
+        const zoomFactor = Math.exp(-e.deltaY * 0.01);
+        const worldX = (focalX - currentPan.x) / currentScale;
+        const worldY = (focalY - currentPan.y) / currentScale;
+        const newScale = Math.min(Math.max(currentScale * zoomFactor, 0.1), 6.0);
+        const newPanX = focalX - worldX * newScale;
+        const newPanY = focalY - worldY * newScale;
 
-      const newScale = Math.min(Math.max(currentScale * zoomFactor, 0.1), 5.0);
+        setScale(newScale);
+        setPanOffset({ x: newPanX, y: newPanY });
+      } else if (e.shiftKey) {
+        // Shift + Wheel = Horizontal pan
+        setPanOffset((prev) => ({ ...prev, x: prev.x - e.deltaY }));
+      } else if (Math.abs(e.deltaX) > 0 && Math.abs(e.deltaY) < 30) {
+        // Two-finger trackpad panning gesture
+        setPanOffset((prev) => ({
+          x: prev.x - e.deltaX,
+          y: prev.y - e.deltaY,
+        }));
+      } else {
+        // Mouse wheel scroll zoom centered on focal point under cursor
+        const zoomFactor = Math.exp(-e.deltaY * 0.002);
+        const worldX = (focalX - currentPan.x) / currentScale;
+        const worldY = (focalY - currentPan.y) / currentScale;
+        const newScale = Math.min(Math.max(currentScale * zoomFactor, 0.1), 6.0);
+        const newPanX = focalX - worldX * newScale;
+        const newPanY = focalY - worldY * newScale;
 
-      // Keep world coordinate under cursor at the same screen position
-      const newPanX = focalX - worldX * newScale;
-      const newPanY = focalY - worldY * newScale;
-
-      setScale(newScale);
-      setPanOffset({ x: newPanX, y: newPanY });
+        setScale(newScale);
+        setPanOffset({ x: newPanX, y: newPanY });
+      }
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
@@ -696,7 +655,7 @@ export default function DrawingCanvas({
           const currentScreenMidY = (t1.clientY + t2.clientY) / 2 - rect.top;
 
           const factor = currentDist / pinchStartRef.current.dist;
-          const newScale = Math.min(Math.max(pinchStartRef.current.scale * factor, 0.1), 5.0);
+          const newScale = Math.min(Math.max(pinchStartRef.current.scale * factor, 0.1), 6.0);
 
           const newPanX = currentScreenMidX - pinchStartRef.current.worldMidX * newScale;
           const newPanY = currentScreenMidY - pinchStartRef.current.worldMidY * newScale;
@@ -751,9 +710,9 @@ export default function DrawingCanvas({
     const screenX = clientX - rect.left;
     const screenY = clientY - rect.top;
 
-    // Convert Screen coordinates into WORLD coordinates
-    const x = screenX / scale;
-    const y = screenY / scale;
+    // Convert Screen coordinates into WORLD coordinates using canvas bounding rect
+    const x = rect.width > 0 ? (screenX / rect.width) * width : 0;
+    const y = rect.height > 0 ? (screenY / rect.height) * height : 0;
 
     return { x, y };
   };
@@ -1007,31 +966,27 @@ export default function DrawingCanvas({
       <div
         className="absolute shadow-2xl rounded-sm overflow-hidden"
         style={{
-          left: `${panOffset.x}px`,
-          top: `${panOffset.y}px`,
-          width: `${width * scale}px`,
-          height: `${height * scale}px`,
+          left: 0,
+          top: 0,
+          width: `${width}px`,
+          height: `${height}px`,
+          transform: `translate3d(${panOffset.x}px, ${panOffset.y}px, 0) scale(${scale})`,
+          transformOrigin: '0 0',
+          willChange: 'transform',
         }}
       >
-        {/* Previous Background Transition Canvas */}
-        <canvas
-          ref={prevBgCanvasRef}
-          className="absolute inset-0 pointer-events-none transition-opacity duration-300 ease-in-out"
-          style={{ opacity: prevBgOpacity, width: `${width * scale}px`, height: `${height * scale}px` }}
-        />
-
         {/* Current Background Canvas */}
         <canvas
           ref={bgCanvasRef}
-          className="absolute inset-0 pointer-events-none transition-opacity duration-300 ease-in-out"
-          style={{ opacity: bgOpacity, width: `${width * scale}px`, height: `${height * scale}px` }}
+          className="absolute inset-0 pointer-events-none"
+          style={{ width: `${width}px`, height: `${height}px` }}
         />
 
         {/* Vector Drawing Canvas */}
         <canvas
           ref={drawingCanvasRef}
           className="absolute inset-0 touch-none"
-          style={{ width: `${width * scale}px`, height: `${height * scale}px` }}
+          style={{ width: `${width}px`, height: `${height}px` }}
         />
 
         {/* FLOATING TEXT TOOL EDITOR OVERLAY */}
@@ -1040,10 +995,10 @@ export default function DrawingCanvas({
             id="text-tool-container"
             className="absolute z-30 group animate-scale-up"
             style={{
-              left: `${textInput.x * scale}px`,
-              top: `${textInput.y * scale}px`,
-              width: `${textContainerSize.width * scale}px`,
-              height: `${textContainerSize.height * scale}px`,
+              left: `${textInput.x}px`,
+              top: `${textInput.y}px`,
+              width: `${textContainerSize.width}px`,
+              height: `${textContainerSize.height}px`,
             }}
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
@@ -1119,10 +1074,10 @@ export default function DrawingCanvas({
             id="image-overlay-container"
             className="absolute z-30 group border-2 border-blue-500 border-dashed rounded-lg shadow-2xl bg-white/10 backdrop-blur-xs transition-all"
             style={{
-              left: `${imageOverlay.x * scale}px`,
-              top: `${imageOverlay.y * scale}px`,
-              width: `${imageOverlay.width * scale}px`,
-              height: `${imageOverlay.height * scale}px`,
+              left: `${imageOverlay.x}px`,
+              top: `${imageOverlay.y}px`,
+              width: `${imageOverlay.width}px`,
+              height: `${imageOverlay.height}px`,
             }}
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}

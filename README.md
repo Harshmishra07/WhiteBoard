@@ -79,23 +79,24 @@ The top floating toolbar provides quick access to all drawing tools, styling con
 
 ---
 
-### Uploading & Annotating PDFs
+### Uploading & Annotating PDFs & PowerPoint Presentations
 
-1. Click the **PDF Upload** button located in the top toolbar or the right-side Slide Drawer.
-2. Choose a PDF file from your computer.
-3. **Let Study** automatically converts each page of the PDF into an individual slide.
-4. Use the **Pen**, **Highlighter**, **Text**, or **Shapes** tools to write, mark, or highlight directly on top of the PDF pages.
+1. **Import Document**: Click the **Import** button located in the right-side Slide Drawer.
+2. Select any **PDF document** (`.pdf`) or **PowerPoint presentation** (`.pptx`, `.ppt`) from your device.
+3. **Let Study** automatically detects the file format and converts each page or slide into an individual high-definition whiteboard slide.
+4. Use the **Pen**, **Highlighter**, **Text**, or **Shapes** tools to write, mark, diagram, or highlight directly on top of the imported slides.
+5. You can insert new blank whiteboards, blackboards, or math grids between imported presentation slides at any time.
 
 ---
 
 ### Managing Slides
 
-Open the **Right Slide Drawer** by clicking the Slide Panel icon on the right edge of the screen:
+Open the **Right Slide Drawer** by clicking the Layers/Slide Panel icon on the right edge of the screen:
 
-- **Add New Blank Slide**: Click **+ Add Slide** and select the background type (Whiteboard, Dark Blackboard, Green Chalkboard, Grid, Cream, or Lined).
-- **Navigate Between Slides**: Click on any slide thumbnail in the drawer to jump directly to it.
-- **Reorder Slides**: Drag and drop slide thumbnails up or down to rearrange presentation order.
-- **Duplicate / Delete Slide**: Hover over a slide thumbnail and click the **Duplicate** or **Delete** button.
+- **Add New Blank Slide**: Click **+ Slide** and select the background type (Whiteboard, Black Board, Green Chalkboard, Math Grid, Warm Cream, or Ruled Lines).
+- **Import Documents**: Click **Import** to import PDF workbooks or PowerPoint presentation decks with a single click.
+- **Navigate Between Slides**: Click on any slide thumbnail in the drawer or use the Up/Down arrow buttons.
+- **Delete Slide**: Hover over any slide thumbnail and click the **Trash** icon.
 
 ---
 

@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ChevronUp,
   ChevronDown,
+  Presentation,
 } from 'lucide-react';
 
 interface SlideSelectorProps {
@@ -19,8 +20,8 @@ interface SlideSelectorProps {
   onSelectSlide: (index: number) => void;
   onAddBlankSlide: (backgroundType: BackgroundType) => void;
   onDeleteSlide: (index: number) => void;
-  onUploadPdf: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  isUploadingPdf: boolean;
+  onUploadDocument: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  isUploadingDocument: boolean;
   pdfPageImages: Record<string, string>; // keyed by `slide.pdfFileId-slide.pdfPageNum`
   isDarkMode?: boolean;
 }
@@ -31,8 +32,8 @@ export default function SlideSelector({
   onSelectSlide,
   onAddBlankSlide,
   onDeleteSlide,
-  onUploadPdf,
-  isUploadingPdf,
+  onUploadDocument,
+  isUploadingDocument,
   pdfPageImages,
   isDarkMode = false,
 }: SlideSelectorProps) {
@@ -57,7 +58,7 @@ export default function SlideSelector({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const triggerPdfUpload = () => {
+  const triggerDocumentUpload = () => {
     fileInputRef.current?.click();
   };
 
@@ -85,14 +86,14 @@ export default function SlideSelector({
       ref={containerRef}
       className="relative"
     >
-      {/* Hidden PDF file uploader input */}
+      {/* Hidden Document file uploader input (PDF and PPT/PPTX) */}
       <input
         type="file"
         ref={fileInputRef}
-        onChange={onUploadPdf}
-        accept="application/pdf"
+        onChange={onUploadDocument}
+        accept=".pdf,.pptx,.ppt,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
         className="hidden"
-        id="pdf-file-uploader"
+        id="document-file-uploader"
       />
 
       {/* Slide Dock Vertical Control Pill */}
@@ -159,219 +160,225 @@ export default function SlideSelector({
         </button>
       </div>
 
-      {/* Popout Flyout Slide Panel */}
+      {/* Flyout Expanded Slides Drawer Panel */}
       {!isMinimized && (
         <div
-          className={`absolute right-full mr-3 top-1/2 -translate-y-1/2 p-3.5 rounded-2xl border shadow-2xl backdrop-blur-xl select-none transition-all duration-200 flex flex-col gap-3 w-60 max-h-[80vh] z-50 animate-in fade-in slide-in-from-right-2 ${
+          className={`absolute right-full mr-3 top-1/2 -translate-y-1/2 w-64 md:w-72 max-h-[82vh] h-[640px] rounded-2xl border shadow-2xl backdrop-blur-xl flex flex-col p-3 gap-2.5 z-50 animate-slide-in select-none ${
             isDarkMode
               ? 'bg-slate-900/98 border-slate-700/80 text-slate-100'
               : 'bg-white/98 border-slate-200/90 text-slate-800'
           }`}
         >
-        {/* Panel Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded-xl ${isDarkMode ? 'bg-blue-950/60 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
-              <Layers size={16} />
+          {/* Panel Header */}
+          <div className="flex items-center justify-between pb-1">
+            <div className="flex items-center gap-1.5">
+              <Layers size={16} className="text-blue-500" />
+              <div className="text-xs font-bold tracking-tight">Slide Deck</div>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-100 text-slate-500'
+              }`}>
+                {slides.length}
+              </span>
             </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-xs font-bold tracking-tight">Slides</span>
-              <span className="text-[11px] font-mono font-medium text-slate-400">({slides.length})</span>
-            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setIsMinimized(true)}
+              className={`p-1 rounded-xl transition-all cursor-pointer ${
+                isDarkMode
+                  ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100'
+              }`}
+              title="Close Slides Panel"
+              id="btn-close-slides-panel"
+            >
+              <X size={15} />
+            </button>
           </div>
 
-          {/* Close Button */}
-          <button
-            onClick={() => setIsMinimized(true)}
-            className={`p-1 rounded-xl transition-all cursor-pointer ${
-              isDarkMode
-                ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100'
-            }`}
-            title="Close Slides Panel"
-            id="btn-close-slides-panel"
-          >
-            <X size={15} />
-          </button>
-        </div>
-
-        {/* Action Buttons Bar */}
-        <div className="flex items-center gap-2" ref={addMenuRef}>
-          <button
-            onClick={triggerPdfUpload}
-            disabled={isUploadingPdf}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl shadow-xs transition-all hover:shadow active:scale-95 cursor-pointer"
-            title="Upload PDF document to annotate"
-            id="btn-upload-pdf"
-          >
-            <Upload size={13} />
-            <span>+ PDF</span>
-          </button>
-
-          <div className="relative flex-1">
+          {/* Action Buttons Bar: Single unified Import button and Slide button */}
+          <div className="flex items-center gap-2" ref={addMenuRef}>
             <button
-              onClick={() => setShowAddMenu(!showAddMenu)}
-              className={`w-full flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-semibold rounded-xl border transition-all hover:shadow active:scale-95 cursor-pointer ${
-                showAddMenu
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                  : isDarkMode
-                  ? 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-slate-200'
-                  : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
-              }`}
-              title="Add New Whiteboard Slide"
-              id="btn-add-slide-menu"
+              onClick={triggerDocumentUpload}
+              disabled={isUploadingDocument}
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-[11px] font-semibold rounded-xl shadow-xs transition-all hover:shadow active:scale-95 cursor-pointer"
+              title="Import PDF document or PowerPoint (.pptx, .ppt) presentation"
+              id="btn-import-document"
             >
-              <Plus size={13} />
-              <span>Slide</span>
+              <Upload size={12} />
+              <span>Import</span>
             </button>
 
-            {/* Add Slide Type Flyout Menu */}
-            {showAddMenu && (
-              <div
-                className={`absolute right-0 top-full mt-2 p-1.5 rounded-2xl border shadow-2xl flex flex-col gap-0.5 w-44 backdrop-blur-xl z-50 ${
-                  isDarkMode
-                    ? 'bg-slate-900/98 border-slate-700 text-slate-100'
-                    : 'bg-white/98 border-slate-200 text-slate-800'
-                }`}
-              >
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
-                  Insert Background
-                </div>
-                {[
-                  { id: 'white', label: 'Plain White' },
-                  { id: 'grid', label: 'Math Grid' },
-                  { id: 'blackboard', label: 'Black Board' },
-                  { id: 'chalkboard', label: 'Green Chalkboard' },
-                  { id: 'cream', label: 'Warm Cream' },
-                  { id: 'ruled', label: 'Ruled Lines' },
-                ].map((bg) => (
-                  <button
-                    key={bg.id}
-                    onClick={() => {
-                      onAddBlankSlide(bg.id as any);
-                      setShowAddMenu(false);
-                    }}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium text-left transition-all cursor-pointer ${
-                      isDarkMode
-                        ? 'hover:bg-slate-800 text-slate-200'
-                        : 'hover:bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full border border-slate-400/60" />
-                    <span>{bg.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* PDF Progress Indicator */}
-        {isUploadingPdf && (
-          <div className="px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-[10px] font-medium text-amber-500 animate-pulse text-center">
-            Rendering PDF pages...
-          </div>
-        )}
-
-        <div className={`h-[1px] w-full ${isDarkMode ? 'bg-slate-800' : 'bg-slate-150'}`} />
-
-        {/* Vertical Scrollable Slide Thumbnails List without ugly scrollbar */}
-        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-2.5 pr-0.5 [ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {slides.map((slide, idx) => {
-            const isActive = idx === activeSlideIndex;
-            const pdfImgKey = slide.pdfFileId && slide.pdfPageNum ? `${slide.pdfFileId}-${slide.pdfPageNum}` : '';
-            const pdfImgSrc = pdfImgKey ? pdfPageImages[pdfImgKey] : null;
-
-            return (
-              <div
-                key={slide.id}
-                onClick={() => onSelectSlide(idx)}
-                className={`relative group flex flex-col gap-1.5 shrink-0 rounded-xl border p-1.5 cursor-pointer transition-all duration-150 ${
-                  isActive
-                    ? 'border-blue-500/90 bg-blue-50/40 dark:bg-blue-950/40 shadow-sm ring-2 ring-blue-500/20'
+            <div className="relative flex-1">
+              <button
+                onClick={() => setShowAddMenu(!showAddMenu)}
+                className={`w-full flex items-center justify-center gap-1 py-1.5 px-2 text-[11px] font-semibold rounded-xl border transition-all hover:shadow active:scale-95 cursor-pointer ${
+                  showAddMenu
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                     : isDarkMode
-                    ? 'border-slate-800/80 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-800/60'
-                    : 'border-slate-200/80 bg-slate-50/80 hover:border-slate-300 hover:bg-white'
+                    ? 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-slate-200'
+                    : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
                 }`}
-                id={`slide-card-${slide.id}`}
+                title="Add New Whiteboard Slide"
+                id="btn-add-slide-menu"
               >
-                {/* Thumbnail Image Box */}
-                <div className={`relative w-full aspect-[16/10] rounded-xl overflow-hidden border flex items-center justify-center transition-colors ${
-                  isDarkMode ? 'border-slate-800/80 bg-slate-950' : 'border-slate-200/80 bg-slate-100'
-                }`}>
-                  {slide.type === 'pdf' && pdfImgSrc ? (
-                    <div className="relative w-full h-full bg-white">
-                      <img
-                        src={pdfImgSrc}
-                        alt={`page-${slide.pdfPageNum}`}
-                        className="w-full h-full object-contain"
-                        referrerPolicy="no-referrer"
-                      />
-                      {slide.drawingDataUrl && (
-                        <img
-                          src={slide.drawingDataUrl}
-                          alt="drawings"
-                          className="absolute inset-0 w-full h-full object-contain"
-                          referrerPolicy="no-referrer"
-                        />
-                      )}
-                      <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-slate-900/80 border border-slate-700/40 rounded-md text-[8px] text-white font-mono">
-                        PDF P.{slide.pdfPageNum}
-                      </span>
-                    </div>
-                  ) : slide.type === 'pdf' ? (
-                    <div className="flex flex-col items-center justify-center gap-1">
-                      <FileText size={18} className="text-amber-500 animate-pulse" />
-                      <span className="text-[9px] text-amber-600 font-mono font-medium">Page {slide.pdfPageNum}</span>
-                    </div>
-                  ) : (
-                    <div className={`relative w-full h-full flex items-center justify-center ${getBackgroundClass(slide.backgroundType)}`}>
-                      {slide.drawingDataUrl && (
-                        <img
-                          src={slide.drawingDataUrl}
-                          alt="drawings"
-                          className="absolute inset-0 w-full h-full object-contain"
-                          referrerPolicy="no-referrer"
-                        />
-                      )}
-                      <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-slate-900/75 border border-slate-700/30 rounded-md text-[8px] text-white font-medium capitalize">
-                        {slide.backgroundType}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <Plus size={12} />
+                <span>Slide</span>
+              </button>
 
-                {/* Footer label & Delete Action */}
-                <div className="flex items-center justify-between pt-1.5 px-1 text-[11px]">
-                  <span className={`truncate font-medium ${isActive ? 'text-blue-600 dark:text-blue-400 font-bold' : isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                    <span className="font-mono text-slate-400 mr-1">{idx + 1}.</span>
-                    {slide.title}
-                  </span>
-
-                  {slides.length > 1 && (
+              {/* Add Slide Type Flyout Menu */}
+              {showAddMenu && (
+                <div
+                  className={`absolute right-0 top-full mt-2 p-1.5 rounded-2xl border shadow-2xl flex flex-col gap-0.5 w-44 backdrop-blur-xl z-50 ${
+                    isDarkMode
+                      ? 'bg-slate-900/98 border-slate-700 text-slate-100'
+                      : 'bg-white/98 border-slate-200 text-slate-800'
+                  }`}
+                >
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
+                    Insert Background
+                  </div>
+                  {[
+                    { id: 'white', label: 'Plain White' },
+                    { id: 'grid', label: 'Math Grid' },
+                    { id: 'blackboard', label: 'Black Board' },
+                    { id: 'chalkboard', label: 'Green Chalkboard' },
+                    { id: 'cream', label: 'Warm Cream' },
+                    { id: 'ruled', label: 'Ruled Lines' },
+                  ].map((bg) => (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteSlide(idx);
+                      key={bg.id}
+                      onClick={() => {
+                        onAddBlankSlide(bg.id as any);
+                        setShowAddMenu(false);
                       }}
-                      className={`opacity-0 group-hover:opacity-100 p-1 rounded-lg transition-all cursor-pointer ${
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-medium text-left transition-all cursor-pointer ${
                         isDarkMode
-                          ? 'text-rose-400 hover:text-rose-300 hover:bg-rose-950/60'
-                          : 'text-rose-500 hover:text-rose-700 hover:bg-rose-50'
+                          ? 'hover:bg-slate-800 text-slate-200'
+                          : 'hover:bg-slate-100 text-slate-700'
                       }`}
-                      title="Delete slide"
                     >
-                      <Trash2 size={12} />
+                      <span className="w-2 h-2 rounded-full border border-slate-400/60" />
+                      <span>{bg.label}</span>
                     </button>
-                  )}
+                  ))}
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    )}
-  </div>
-);
-}
+              )}
+            </div>
+          </div>
 
+          {/* Progress Indicator */}
+          {isUploadingDocument && (
+            <div className="px-2.5 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-[10px] font-medium text-blue-500 animate-pulse text-center">
+              Importing slides from document...
+            </div>
+          )}
+
+          <div className={`h-[1px] w-full ${isDarkMode ? 'bg-slate-800' : 'bg-slate-150'}`} />
+
+          {/* Vertical Scrollable Slide Thumbnails List without ugly scrollbar */}
+          <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-2.5 pr-0.5 [ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {slides.map((slide, idx) => {
+              const isActive = idx === activeSlideIndex;
+              const docImgKey = slide.pdfFileId && slide.pdfPageNum ? `${slide.pdfFileId}-${slide.pdfPageNum}` : '';
+              const docImgSrc = docImgKey ? pdfPageImages[docImgKey] : null;
+
+              return (
+                <div
+                  key={slide.id}
+                  onClick={() => onSelectSlide(idx)}
+                  className={`relative group flex flex-col gap-1.5 shrink-0 rounded-xl border p-1.5 cursor-pointer transition-all duration-150 ${
+                    isActive
+                      ? 'border-blue-500/90 bg-blue-50/40 dark:bg-blue-950/40 shadow-sm ring-2 ring-blue-500/20'
+                      : isDarkMode
+                      ? 'border-slate-800/80 bg-slate-900/50 hover:border-slate-700 hover:bg-slate-800/60'
+                      : 'border-slate-200/80 bg-slate-50/80 hover:border-slate-300 hover:bg-white'
+                  }`}
+                  id={`slide-card-${slide.id}`}
+                >
+                  {/* Thumbnail Image Box */}
+                  <div className={`relative w-full aspect-[16/10] rounded-xl overflow-hidden border flex items-center justify-center transition-colors ${
+                    isDarkMode ? 'border-slate-800/80 bg-slate-950' : 'border-slate-200/80 bg-slate-100'
+                  }`}>
+                    {(slide.type === 'pdf' || slide.type === 'ppt') && docImgSrc ? (
+                      <div className="relative w-full h-full bg-white">
+                        <img
+                          src={docImgSrc}
+                          alt={`page-${slide.pdfPageNum}`}
+                          className="w-full h-full object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                        {slide.drawingDataUrl && (
+                          <img
+                            src={slide.drawingDataUrl}
+                            alt="drawings"
+                            className="absolute inset-0 w-full h-full object-contain"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                        <span className={`absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md text-[8px] text-white font-mono border ${
+                          slide.type === 'ppt' ? 'bg-orange-950/80 border-orange-700/40' : 'bg-slate-900/80 border-slate-700/40'
+                        }`}>
+                          {slide.type === 'ppt' ? `PPT ${slide.pdfPageNum}` : `PDF P.${slide.pdfPageNum}`}
+                        </span>
+                      </div>
+                    ) : slide.type === 'pdf' ? (
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <FileText size={18} className="text-amber-500 animate-pulse" />
+                        <span className="text-[9px] text-amber-600 font-mono font-medium">Page {slide.pdfPageNum}</span>
+                      </div>
+                    ) : slide.type === 'ppt' ? (
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <Presentation size={18} className="text-orange-500 animate-pulse" />
+                        <span className="text-[9px] text-orange-600 font-mono font-medium">Slide {slide.pdfPageNum}</span>
+                      </div>
+                    ) : (
+                      <div className={`relative w-full h-full flex items-center justify-center ${getBackgroundClass(slide.backgroundType)}`}>
+                        {slide.drawingDataUrl && (
+                          <img
+                            src={slide.drawingDataUrl}
+                            alt="drawings"
+                            className="absolute inset-0 w-full h-full object-contain"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                        <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-slate-900/75 border border-slate-700/30 rounded-md text-[8px] text-white font-medium capitalize">
+                          {slide.backgroundType}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer label & Delete Action */}
+                  <div className="flex items-center justify-between pt-1.5 px-1 text-[11px]">
+                    <span className={`truncate font-medium ${isActive ? 'text-blue-600 dark:text-blue-400 font-bold' : isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <span className="font-mono text-slate-400 mr-1">{idx + 1}.</span>
+                      {slide.title}
+                    </span>
+
+                    {slides.length > 1 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteSlide(idx);
+                        }}
+                        className={`opacity-0 group-hover:opacity-100 p-1 rounded-lg transition-all cursor-pointer ${
+                          isDarkMode
+                            ? 'text-rose-400 hover:text-rose-300 hover:bg-rose-950/60'
+                            : 'text-rose-500 hover:text-rose-700 hover:bg-rose-50'
+                        }`}
+                        title="Delete slide"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
