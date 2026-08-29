@@ -1,5 +1,5 @@
 {
-  "name": "Let Study",
+  "name": "Let's Study",
   "description": "An interactive whiteboard and study app supporting freehand drawing, shapes, whiteboards, blackboards, PDF and PowerPoint (PPT/PPTX) annotations.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

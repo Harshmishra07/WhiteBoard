@@ -805,15 +805,9 @@ export default function App() {
               <Presentation size={20} />
             </div>
             <div>
-              <h1 className="text-sm font-bold tracking-tight leading-none flex items-center gap-1.5">
-                <span className={isDarkMode ? 'text-slate-100' : 'text-slate-900'}>Let Study</span>
-                <span className="text-[10px] font-medium px-1.5 py-0.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 rounded-md border border-indigo-200 dark:border-indigo-800">
-                  PPTX Whiteboard Studio
-                </span>
+              <h1 className="text-base font-bold tracking-tight leading-none">
+                <span className={isDarkMode ? 'text-slate-100' : 'text-slate-900'}>Let's Study</span>
               </h1>
-              <p className={`text-[10px] mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Import PowerPoint (.pptx) & PDF with interactive vector whiteboard
-              </p>
             </div>
           </div>
 
